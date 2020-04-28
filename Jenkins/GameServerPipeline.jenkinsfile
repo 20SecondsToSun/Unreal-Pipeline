@@ -1,0 +1,39 @@
+pipeline {
+    agent {
+        node {
+          label ""
+          customWorkspace "${params.DIRECTORY}"
+        }
+    }
+    stages {
+        stage('Git') {
+            environment {
+              SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started"
+            }
+            steps {
+                slackSend color: '#13edb3', message: "$SLACK_MESSAGE"
+                checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
+            }
+        }
+        stage('Build') {
+            environment {
+                PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
+                ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
+                BAT_PATH = "${params.UE_PATH}\\Engine\\Build\\BatchFiles\\RunUAT.bat"
+            }
+            steps {
+                bat """
+                    "$BAT_PATH" BuildCookRun -project=$PROJECT_PATH -platform=${params.PLATFORM} -archivedirectory=$ARCHIVE_DIR -ServerConfig=${params.CLIENT_CONFIG} ${params.BUILD_ARGS} -server -noclient
+                """
+            }
+        }
+        stage('Post') {
+            environment {
+               SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}"
+            }
+            steps {
+                slackSend color: '#0000ff', message: "$SLACK_MESSAGE"
+            }
+        }
+    }
+}
