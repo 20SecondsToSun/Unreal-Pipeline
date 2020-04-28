@@ -23,7 +23,7 @@ pipeline {
             }
             steps {
                 bat """
-                    "$BAT_PATH" BuildCookRun -project=$PROJECT_PATH -platform=${params.PLATFORM} -archivedirectory=$ARCHIVE_DIR -ClientConfig=${params.CLIENT_CONFIG} ${params.BUILD_ARGS}
+                    "$BAT_PATH" BuildCookRun -project="$PROJECT_PATH" -platform=${params.PLATFORM} -archivedirectory="$ARCHIVE_DIR" -ClientConfig=${params.CLIENT_CONFIG} ${params.BUILD_ARGS}
                 """
             }
         }
