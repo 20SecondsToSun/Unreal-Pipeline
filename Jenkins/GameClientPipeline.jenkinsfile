@@ -23,6 +23,15 @@ pipeline {
         ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
     }
     stages {
+        stage('Clean')
+        {
+            when {
+                expression { params.CLEAN == true }
+            }
+            steps {
+                echo "Clean"
+            }
+        }
         stage('Git') {
             steps {
                 wrap([$class: 'BuildUser']) {
