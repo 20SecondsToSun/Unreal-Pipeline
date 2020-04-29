@@ -43,11 +43,13 @@ pipeline {
             }
         }
     }
-    post {
-        always {
+    post { 
+        success {
             bat """
                 ren "$ARCHIVE_DIR\\WindowsServer" Server
             """
+        }       
+        always {           
             wrap([$class: 'BuildUser']) {
                 slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}", getcolorByBuildStatus("${currentBuild.currentResult}"))
     		}

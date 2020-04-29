@@ -64,13 +64,15 @@ pipeline {
         }
     }
     post {
-        always {
+        success {
             junit 'TestResults\\*.xml'
             bat """
                 ren "$ARCHIVE_DIR\\WindowsNoEditor" Client
                 ren "$ARCHIVE_DIR\\WindowsServer" Server
                 xcopy "${params.DIRECTORY}\\Scripts\\Run" "$ARCHIVE_DIR" /s /e 
             """
+        }
+        always {
             wrap([$class: 'BuildUser']) {
                 slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}", getcolorByBuildStatus("${currentBuild.currentResult}"))
     		}
