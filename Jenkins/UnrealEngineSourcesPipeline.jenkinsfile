@@ -36,7 +36,7 @@ pipeline {
                 wrap([$class: 'BuildUser']) {
                     slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}", 'good')
                 }
-                checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
+                checkout([$class: 'GitSCM', extensions: [[$class: 'CloneOption', timeout: 120]], branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
             }
         }
         stage('Build') {
