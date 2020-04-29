@@ -1,3 +1,17 @@
+def slackNotify(message, color) {
+    slackSend color: "${color}", message: "${message}"
+}
+
+def getcolorByBuildStatus(buildStatus){
+    def color = 'danger'
+    if (buildStatus == 'SUCCESS') {
+        color = 'good'
+    } else if (buildStatus == 'UNSTABLE') {
+        color = 'warning'
+    }
+    return color
+}
+
 pipeline {
     agent {
         node {
@@ -7,9 +21,6 @@ pipeline {
     }
     environment {
         ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
-        CLIENT_PATH = "$ARCHIVE_DIR\\WindowsNoEditor"
-        SERVER_PATH = "$ARCHIVE_DIR\\WindowsServer"
-        RUN_SCRIPTS_PATH = "${params.DIRECTORY}\\Scripts\\Run"
         PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
     }
     stages {
@@ -19,7 +30,7 @@ pipeline {
             }
             steps {
                 wrap([$class: 'BuildUser']) {
-                    slackSend color: '#2eb886', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}"
+                    slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}", 'good')
                 }
                 checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
             }
@@ -49,27 +60,19 @@ pipeline {
                     "$EDITOR_PATH" "$PROJECT_PATH" -ExecCmds="Automation RunTests ${params.TEST_NAMES}" -testexit="Automation Test Queue Empty" -log="$LOG_PATH" -ReportOutputPath="$TEST_REPORT_PATH" -nopause
                     python "${CONVERTER_PATH}" --json="${UE_TESTS_PATH}" --out="${JUNIT_TESTS_PATH}"
                 """
-            }            
+            }
         }
     }
     post {
         always {
             junit 'TestResults\\*.xml'
             bat """
-                ren "$CLIENT_PATH" Client
-                ren "$SERVER_PATH" Server
-                xcopy "$RUN_SCRIPTS_PATH" "$ARCHIVE_DIR" /s /e 
+                ren "$ARCHIVE_DIR\\WindowsNoEditor" Client
+                ren "$ARCHIVE_DIR\\WindowsServer" Server
+                xcopy "${params.DIRECTORY}\\Scripts\\Run" "$ARCHIVE_DIR" /s /e 
             """
-        }
-        success {
-    		wrap([$class: 'BuildUser']) {
-    			slackSend color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Success"
-    		}
-        }
-            
-        failure {
-    		wrap([$class: 'BuildUser']) {
-    			slackSend color: 'bad', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Failure"
+            wrap([$class: 'BuildUser']) {
+                slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}", getcolorByBuildStatus("${currentBuild.currentResult}"))
     		}
         }
     }
