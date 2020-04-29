@@ -7,11 +7,10 @@ pipeline {
     }
     stages {
         stage('Git') {
-            environment {
-              SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started  by user ${env.BUILD_USER}"
-            }
             steps {
-                slackSend color: '#2eb886', message: "$SLACK_MESSAGE"
+                wrap([$class: 'BuildUser']) {
+                    slackSend color: '#2eb886', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}"
+                }
                 checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
             }
         }
@@ -27,13 +26,18 @@ pipeline {
                 """
             }
         }
-        stage('Post') {
-            environment {
-               SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}"
-            }
-            steps {
-                slackSend color: '#0000ff', message: "$SLACK_MESSAGE"
-            }
+    }
+    post {
+        success {
+    		wrap([$class: 'BuildUser']) {
+    			slackSend color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Success"
+    		}
+        }
+            
+        failure {
+    		wrap([$class: 'BuildUser']) {
+    			slackSend color: 'bad', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Failure"
+    		}
         }
     }
 }
