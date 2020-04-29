@@ -11,7 +11,7 @@ pipeline {
               SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started"
             }
             steps {
-                slackSend color: '#13edb3', message: "$SLACK_MESSAGE"
+                slackSend color: '#2eb886', message: "$SLACK_MESSAGE"
                 checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
             }
         }
