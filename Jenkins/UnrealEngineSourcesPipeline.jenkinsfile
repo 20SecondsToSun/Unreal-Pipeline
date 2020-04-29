@@ -1,0 +1,59 @@
+def slackNotify(message, color) {
+    slackSend color: "${color}", message: "${message}"
+}
+
+def getcolorByBuildStatus(buildStatus){
+    def color = 'danger'
+    if (buildStatus == 'SUCCESS') {
+        color = 'good'
+    } else if (buildStatus == 'UNSTABLE') {
+        color = 'warning'
+    }
+    return color
+}
+
+pipeline {
+    agent {
+        node {
+          label ""
+          customWorkspace "${params.DIRECTORY}"
+        }
+    }
+    stages {
+        stage('Clean')
+        {
+            when {
+                expression { params.CLEAN == true }
+            }
+            steps {
+                bat """
+                    git clean -fdx
+                """
+            }
+        }
+        stage('Git') {
+            steps {
+                wrap([$class: 'BuildUser']) {
+                    slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}", 'good')
+                }
+                checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
+            }
+        }
+        stage('Build') {
+            steps {
+                bat """
+                    "${params.DIRECTORY}\\Setup.bat"
+                    "${params.DIRECTORY}\\GenerateProjectFiles.bat"
+                    "${params.MS_BUILD}" "${params.DIRECTORY}\\UE4.sln" -target:"Engine\\UE4" -property:Platform="${params.PLATFORM}";Configuration="${params.CONFIGURATION}" -verbosity:"${params.VERBOSITY}"
+                """
+            }
+        }
+    }
+    post {
+        always {           
+            wrap([$class: 'BuildUser']) {
+                slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}", getcolorByBuildStatus("${currentBuild.currentResult}"))
+    		}
+        }
+    }
+}
