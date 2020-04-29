@@ -19,6 +19,9 @@ pipeline {
           customWorkspace "${params.DIRECTORY}"
         }
     }
+    environment {
+        ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
+    }
     stages {
         stage('Git') {
             steps {
@@ -31,7 +34,6 @@ pipeline {
         stage('Build') {
             environment {
                 PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
-                ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
                 BAT_PATH = "${params.UE_PATH}\\Engine\\Build\\BatchFiles\\RunUAT.bat"
             }
             steps {
