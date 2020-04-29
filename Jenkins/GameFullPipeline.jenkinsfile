@@ -1,7 +1,7 @@
 pipeline {
     agent {
         node {
-          label ""
+          label "UE_TESTS"
           customWorkspace "${params.DIRECTORY}"
         }
     }
@@ -28,7 +28,7 @@ pipeline {
                     "$BAT_PATH" BuildCookRun -project="$PROJECT_PATH" -platform=${params.PLATFORM} -archivedirectory="$ARCHIVE_DIR" -ClientConfig=${params.GAME_CONFIG} -ServerConfig=${params.GAME_CONFIG} -server ${params.BUILD_ARGS}
                 """
             }
-        }   
+        }
         stage('Tests') {
            environment {
                 PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
@@ -37,7 +37,7 @@ pipeline {
                 TEST_REPORT_PATH = "${params.DIRECTORY}\\TestResults"
                 CONVERTER_PATH = "${params.DIRECTORY}\\Scripts\\ue_to_junit.py"
                 UE_TESTS_PATH = "${params.DIRECTORY}\\TestResults\\index.json"
-                JUNIT_TESTS_PATH = "${params.DIRECTORY}\\TestResults\unreal_unittests.xml"
+                JUNIT_TESTS_PATH = "${params.DIRECTORY}\\TestResults\\unreal_unittests.xml"
             }
             steps {
                 bat """
@@ -48,6 +48,9 @@ pipeline {
         }
     }
     post {
+        always {
+            junit 'TestResults\\*.xml'
+        }
         success {
     		wrap([$class: 'BuildUser']) {
     			slackSend color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Success"
