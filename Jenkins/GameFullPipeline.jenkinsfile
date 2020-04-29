@@ -24,6 +24,17 @@ pipeline {
         PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
     }
     stages {
+        stage('Clean')
+        {
+            when {
+                expression { params.CLEAN == true }
+            }
+            steps {
+                bat """
+                    git clean -fdx
+                """
+            }
+        }
         stage('Git') {
             environment {
               SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started"

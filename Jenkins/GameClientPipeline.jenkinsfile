@@ -29,7 +29,9 @@ pipeline {
                 expression { params.CLEAN == true }
             }
             steps {
-                echo "Clean"
+                bat """
+                    git clean -fdx
+                """
             }
         }
         stage('Git') {

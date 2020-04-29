@@ -23,6 +23,17 @@ pipeline {
         ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
     }
     stages {
+        stage('Clean')
+        {
+            when {
+                expression { params.CLEAN == true }
+            }
+            steps {
+                bat """
+                    git clean -fdx
+                """
+            }
+        }
         stage('Git') {
             steps {
                 wrap([$class: 'BuildUser']) {
