@@ -5,6 +5,13 @@ pipeline {
           customWorkspace "${params.DIRECTORY}"
         }
     }
+    environment {
+        ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
+        CLIENT_PATH = "$ARCHIVE_DIR\\WindowsNoEditor"
+        SERVER_PATH = "$ARCHIVE_DIR\\WindowsServer"
+        RUN_SCRIPTS_PATH = "${params.DIRECTORY}\\Scripts\\Run"
+        PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
+    }
     stages {
         stage('Git') {
             environment {
@@ -19,7 +26,6 @@ pipeline {
         }
         stage('Build') {
             environment {
-                PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
                 ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
                 BAT_PATH = "${params.UE_PATH}\\Engine\\Build\\BatchFiles\\RunUAT.bat"
             }
@@ -31,7 +37,6 @@ pipeline {
         }
         stage('Tests') {
            environment {
-                PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
                 LOG_PATH = "${params.DIRECTORY}\\TestResults\\RunTests.log"
                 EDITOR_PATH = "${params.UE_PATH}\\Engine\\Binaries\\Win64\\UE4Editor.exe"
                 TEST_REPORT_PATH = "${params.DIRECTORY}\\TestResults"
@@ -42,14 +47,19 @@ pipeline {
             steps {
                 bat """
                     "$EDITOR_PATH" "$PROJECT_PATH" -ExecCmds="Automation RunTests ${params.TEST_NAMES}" -testexit="Automation Test Queue Empty" -log="$LOG_PATH" -ReportOutputPath="$TEST_REPORT_PATH" -nopause
+                    python "${CONVERTER_PATH}" --json="${UE_TESTS_PATH}" --out="${JUNIT_TESTS_PATH}"
                 """
-                sh 'python "$CONVERTER_PATH" --json="$UE_TESTS_PATH" --out="$JUNIT_TESTS_PATH"'
-            }
+            }            
         }
     }
     post {
         always {
             junit 'TestResults\\*.xml'
+            bat """
+                ren "$CLIENT_PATH" Client
+                ren "$SERVER_PATH" Server
+                xcopy "$RUN_SCRIPTS_PATH" "$ARCHIVE_DIR" /s /e 
+            """
         }
         success {
     		wrap([$class: 'BuildUser']) {
