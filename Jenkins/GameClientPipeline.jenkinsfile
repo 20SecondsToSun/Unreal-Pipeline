@@ -3,13 +3,12 @@ def slackNotify(message, color) {
 }
 
 def getcolorByBuildStatus(buildStatus){
-    def color = 'danger'
     if (buildStatus == 'SUCCESS') {
-        color = 'good'
+        return 'good'
     } else if (buildStatus == 'UNSTABLE') {
-        color = 'warning'
+        return 'warning'
     }
-    return color
+    return 'danger'
 }
 
 pipeline {
