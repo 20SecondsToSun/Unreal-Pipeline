@@ -11,7 +11,9 @@ pipeline {
               SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started"
             }
             steps {
-                slackSend color: '#2eb886', message: "$SLACK_MESSAGE"
+                wrap([$class: 'BuildUser']) {
+                    slackSend color: '#2eb886', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}"
+                }
                 checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
             }
         }
@@ -26,14 +28,36 @@ pipeline {
                     "$BAT_PATH" BuildCookRun -project="$PROJECT_PATH" -platform=${params.PLATFORM} -archivedirectory="$ARCHIVE_DIR" -ClientConfig=${params.GAME_CONFIG} -ServerConfig=${params.GAME_CONFIG} -server ${params.BUILD_ARGS}
                 """
             }
-        }
-        stage('Post') {
-            environment {
-               SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}"
+        }   
+        stage('Tests') {
+           environment {
+                PROJECT_PATH = "${params.DIRECTORY}\\${params.UE_PROJECT_NAME}.uproject"
+                LOG_PATH = "${params.DIRECTORY}\\TestResults\\RunTests.log"
+                EDITOR_PATH = "${params.UE_PATH}\\Engine\\Binaries\\Win64\\UE4Editor.exe"
+                TEST_REPORT_PATH = "${params.DIRECTORY}\\TestResults"
+                CONVERTER_PATH = "${params.DIRECTORY}\\Scripts\\ue_to_junit.py"
+                UE_TESTS_PATH = "${params.DIRECTORY}\\TestResults\\index.json"
+                JUNIT_TESTS_PATH = "${params.DIRECTORY}\\TestResults\unreal_unittests.xml"
             }
             steps {
-                slackSend color: '#0000ff', message: "$SLACK_MESSAGE"
+                bat """
+                    "$EDITOR_PATH" "$PROJECT_PATH" -ExecCmds="Automation RunTests ${params.TEST_NAMES}" -testexit="Automation Test Queue Empty" -log="$LOG_PATH" -ReportOutputPath="$TEST_REPORT_PATH" -nopause
+                """
+                sh 'python "$CONVERTER_PATH" --json="$UE_TESTS_PATH" --out="$JUNIT_TESTS_PATH"'
             }
+        }
+    }
+    post {
+        success {
+    		wrap([$class: 'BuildUser']) {
+    			slackSend color: 'good', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Success"
+    		}
+        }
+            
+        failure {
+    		wrap([$class: 'BuildUser']) {
+    			slackSend color: 'bad', message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} Failure"
+    		}
         }
     }
 }
