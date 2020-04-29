@@ -1,3 +1,17 @@
+def slackNotify(message, color) {
+    slackSend color: "${color}", message: "${message}"
+}
+
+def getcolorByBuildStatus(buildStatus){
+    def color = 'danger'
+    if (buildStatus == 'SUCCESS') {
+        color = 'good'
+    } else if (buildStatus == 'UNSTABLE') {
+        color = 'warning'
+    }
+    return color
+}
+
 pipeline {
     agent {
         node {
@@ -7,11 +21,10 @@ pipeline {
     }
     stages {
         stage('Git') {
-            environment {
-              SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started"
-            }
             steps {
-                slackSend color: '#2eb886', message: "$SLACK_MESSAGE"
+                wrap([$class: 'BuildUser']) {
+                    slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}", 'good')
+                }
                 checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
             }
         }
@@ -27,13 +40,15 @@ pipeline {
                 """
             }
         }
-        stage('Post') {
-            environment {
-               SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}"
-            }
-            steps {
-                slackSend color: '#0000ff', message: "$SLACK_MESSAGE"
-            }
+    }
+    post {
+        always {
+            bat """
+                ren "$ARCHIVE_DIR\\WindowsServer" Server
+            """
+            wrap([$class: 'BuildUser']) {
+                slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}", getcolorByBuildStatus("${currentBuild.currentResult}"))
+    		}
         }
     }
 }
