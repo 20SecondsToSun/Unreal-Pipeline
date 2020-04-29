@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Git') {
             environment {
-              SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started"
+              SLACK_MESSAGE = "${env.JOB_NAME} - #${env.BUILD_NUMBER} Started  by user ${env.BUILD_USER}"
             }
             steps {
                 slackSend color: '#2eb886', message: "$SLACK_MESSAGE"
