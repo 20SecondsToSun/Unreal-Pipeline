@@ -42,7 +42,9 @@ pipeline {
             steps {
                 bat """
                     "${params.DIRECTORY}\\Setup.bat"
+
                     "${params.DIRECTORY}\\GenerateProjectFiles.bat"
+
                     "${params.MS_BUILD}" "${params.DIRECTORY}\\UE4.sln" -target:"Engine\\UE4" -property:Platform="${params.PLATFORM}";Configuration="${params.CONFIGURATION}" -verbosity:"${params.VERBOSITY}"
                 """
             }
