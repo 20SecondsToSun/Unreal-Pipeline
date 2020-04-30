@@ -1,15 +1,4 @@
-def slackNotify(message, color) {
-    slackSend color: "${color}", message: "${message}"
-}
-
-def getcolorByBuildStatus(buildStatus){
-    if (buildStatus == 'SUCCESS') {
-        return 'good'
-    } else if (buildStatus == 'UNSTABLE') {
-        return 'warning'
-    }
-    return 'danger'
-}
+def slack
 
 pipeline {
     agent {
@@ -22,6 +11,13 @@ pipeline {
         ARCHIVE_DIR = "${params.PACKAGE_PATH}\\${env.JOB_NAME}\\${env.BUILD_NUMBER}"
     }
     stages {
+        stage('Init') {
+            steps {
+                script{
+                    slack = load '${params.DIRECTORY}\\slack-helper.groovy'
+                }
+            }
+        }
         stage('Clean')
         {
             when {
@@ -35,8 +31,10 @@ pipeline {
         }
         stage('Git') {
             steps {
-                wrap([$class: 'BuildUser']) {
-                    slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}", 'good')
+                script{
+                    wrap([$class: 'BuildUser']) {
+                        slack.notify("${env.JOB_NAME} - #${env.BUILD_NUMBER} Started by user ${env.BUILD_USER}", 'good')
+                    }
                 }
                 checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: "${params.GIT_CREDENTIAL}", url: "${params.GIT_URL}"]]])
             }
@@ -59,10 +57,12 @@ pipeline {
                 ren "$ARCHIVE_DIR\\WindowsNoEditor" Client
             """
         }  
-        always {           
-            wrap([$class: 'BuildUser']) {
-                slackNotify("${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}", getcolorByBuildStatus("${currentBuild.currentResult}"))
-    		}
+        always {  
+            script{         
+                wrap([$class: 'BuildUser']) {
+                    slack.notify("${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.currentResult}", slack.getcolorByBuildStatus("${currentBuild.currentResult}"))
+                }
+            }
         }
     }
 }
