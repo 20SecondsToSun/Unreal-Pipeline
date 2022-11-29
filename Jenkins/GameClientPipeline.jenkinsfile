@@ -35,8 +35,8 @@ pipeline {
         stage('Git clone') {
             steps {
                 echo '-----------------'
-                echo "$GIT_URL"
-                echo "'$GIT_URL'"
+                echo "$GIT_URL_GAME"
+                echo "'$GIT_URL_GAME'"
                 slackSend channel: "$SLACK_CHANNEL",
                     color: "$currentBuild.previousBuild" == 'null' ? '#18A558' :
                     ColorFromBuildResuult("$currentBuild.previousBuild.result"),
@@ -46,7 +46,7 @@ pipeline {
                     branches: [[name: '$GIT_BRANCH']],
                     // extensions: [[$class: 'CleanBeforeCheckout']],
                     userRemoteConfigs: [[credentialsId: "$GIT_CREDENTIALS",
-                    url: "$GIT_URL"]]])
+                    url: "$GIT_URL_GAME"]]])
             }
         }
         stage('Build') {
