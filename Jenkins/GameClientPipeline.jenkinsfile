@@ -43,7 +43,7 @@ pipeline {
                     branches: [[name: '$GIT_BRANCH']],
                     // extensions: [[$class: 'CleanBeforeCheckout']],
                     userRemoteConfigs: [[credentialsId: "$GIT_CREDENTIALS",
-                    url: 'https://github.com/life-exe/UnrealTPSGame']]])
+                    url: '$GIT_URL']]])
             }
         }
         stage('Build') {
