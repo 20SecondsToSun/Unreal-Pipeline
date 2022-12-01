@@ -20,7 +20,7 @@ pipeline {
     }
 
     /* environment {
-        GIT_URL = 'https://github.com/life-exe/UnrealTPSGame'
+        GIT_URL1 = 'https://github.com/life-exe/UnrealTPSGame'
         GIT_CREDENTIALS = 'life-exe-github'
         UAT_PATH = 'C:\\Epic Games\\UE Binary\\UE_5.0\\Engine\\Build\\BatchFiles\\RunUAT.bat'
         PROJECT_PATH = "$BUILD_DIR\\TPS.uproject"
