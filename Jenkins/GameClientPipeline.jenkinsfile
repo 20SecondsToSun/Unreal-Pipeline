@@ -35,8 +35,8 @@ pipeline {
         stage('Git clone') {
             steps {
                 echo '-----------------'
-                echo "$GIT_URL_GAME"
-                echo "'$GIT_URL_GAME'"
+                echo "$GIT_URL"
+                echo "'$GIT_URL'"
                 slackSend channel: "$SLACK_CHANNEL",
                     color: "$currentBuild.previousBuild" == 'null' ? '#18A558' :
                     ColorFromBuildResuult("$currentBuild.previousBuild.result"),
